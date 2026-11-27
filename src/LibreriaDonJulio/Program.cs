@@ -1,10 +1,20 @@
 using LibreriaDonJulio.DataContext;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddAuthentication(
+   CookieAuthenticationDefaults.AuthenticationScheme)
+   .AddCookie(options =>
+   {
+       options.LoginPath = "/Account/Login";
+       options.ExpireTimeSpan = TimeSpan.FromHours(8);
+       options.SlidingExpiration = true;
+   });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
   options.UseSqlite(
@@ -23,6 +33,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
