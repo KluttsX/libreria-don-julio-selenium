@@ -109,6 +109,12 @@ namespace LibreriaDonJulio.Tests
                    "LDJ-5 / LDJ-18",
                    "LDJ-18-edit-book-boundary",
                    EditBookSucceedsWithZeroValues);
+
+                RunScenario(
+                   "Delete book successfully",
+                   "LDJ-6 / LDJ-19",
+                   "LDJ-19-delete-book-valid",
+                   DeleteBookSucceeds);
             }
 
             return _results
@@ -659,6 +665,60 @@ namespace LibreriaDonJulio.Tests
             Assert.That(cells[4].Text, Is.EqualTo("9788408144755"));
             Assert.That(cells[5].Text, Is.EqualTo("0.00"));
             Assert.That(cells[6].Text, Is.EqualTo("0"));
+        }
+        #endregion
+
+        #region TEST DELETE BOOKS
+        private void DeleteBookSucceeds()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            var row = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408045106")));
+
+            row.FindElement(By.CssSelector("a.btn-danger")).Click();
+
+            wait.Until(driver =>
+                driver.Url.Contains("/Books/Delete"));
+
+            var details = _driver.FindElements(
+                By.CssSelector("dl.row dd"));
+
+            Assert.That(details[0].Text, Is.EqualTo("La Quinta Montaña"));
+            Assert.That(details[1].Text, Is.EqualTo("Paulo Coelho"));
+            Assert.That(details[4].Text, Is.EqualTo("9788408045106"));
+
+            _driver.FindElement(
+                By.CssSelector("form[action*='/Books/Delete'] button[type='submit']"))
+                .Click();
+
+            wait.Until(driver =>
+                driver.Url.TrimEnd('/') == $"{baseUrl}/Books"
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books/Index");
+
+            _driver.Navigate().Refresh();
+
+            var rows = _driver.FindElements(
+                By.CssSelector("table tbody tr"));
+
+            Assert.That(rows.Count, Is.EqualTo(1));
+
+            Assert.That(
+                rows.Any(element =>
+                    element.Text.Contains("9788408045106")),
+                Is.False);
+
+            Assert.That(
+                rows.Any(element =>
+                    element.Text.Contains("9788408144755")),
+                Is.True);
         }
         #endregion
 
