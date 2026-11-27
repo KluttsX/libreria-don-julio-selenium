@@ -97,6 +97,12 @@ namespace LibreriaDonJulio.Tests
                   "LDJ-5 / LDJ-16",
                   "LDJ-16-edit-book-valid",
                   EditBookSucceeds);
+
+                RunScenario(
+                  "Edit book with negative values",
+                  "LDJ-5 / LDJ-17",
+                  "LDJ-17-edit-book-invalid",
+                  EditBookFailsWithNegativeValues);
             }
 
             return _results
@@ -538,6 +544,65 @@ namespace LibreriaDonJulio.Tests
             Assert.That(cells[1].Text, Is.EqualTo("El Alquimista"));
             Assert.That(cells[2].Text, Is.EqualTo("Paulo Coelho"));
             Assert.That(cells[4].Text, Is.EqualTo("9788408144755"));
+            Assert.That(cells[5].Text, Is.EqualTo("1250.00"));
+            Assert.That(cells[6].Text, Is.EqualTo("45"));
+        }
+
+        private void EditBookFailsWithNegativeValues()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            var row = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408144755")));
+
+            row.FindElement(By.CssSelector("a.btn-warning")).Click();
+
+            wait.Until(driver =>
+                driver.Url.Contains("/Books/Edit"));
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("-957");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("-15");
+
+            _driver.FindElement(
+                By.CssSelector("form[action*='/Books/Edit'] button[type='submit']"))
+                .Click();
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector(".field-validation-error"))
+                    .Count(element => element.Displayed) == 2);
+
+            var priceError = _driver.FindElement(
+                By.CssSelector("span[data-valmsg-for='Price']")).Text;
+
+            var stockError = _driver.FindElement(
+                By.CssSelector("span[data-valmsg-for='Stock']")).Text;
+
+            Assert.That(priceError, Is.Not.Empty);
+            Assert.That(stockError, Is.Not.Empty);
+
+            Assert.That(
+                _driver.Url,
+                Does.Contain("/Books/Edit"));
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var unchangedRow = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408144755")));
+
+            var cells = unchangedRow.FindElements(By.CssSelector("td"));
+
             Assert.That(cells[5].Text, Is.EqualTo("1250.00"));
             Assert.That(cells[6].Text, Is.EqualTo("45"));
         }
