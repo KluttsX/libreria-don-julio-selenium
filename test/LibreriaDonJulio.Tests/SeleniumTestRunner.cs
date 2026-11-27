@@ -55,12 +55,31 @@ namespace LibreriaDonJulio.Tests
                   "LDJ-2 / LDJ-9",
                   "LDJ-9-login-empty",
                   LoginFailsWithEmptyFields);
+
+                RunScenario(
+                  "Create book with valid data",
+                  "LDJ-3 / LDJ-10",
+                  "LDJ-10-create-book-valid",
+                  CreateBookSucceeds);
+
+                RunScenario(
+                   "Create book with negative values",
+                    "LDJ-3 / LDJ-11",
+                    "LDJ-11-create-book-invalid",
+                    CreateBookFailsWithNegativeValues);
+
+                RunScenario(
+                   "Create book with zero values",
+                   "LDJ-3 / LDJ-12",
+                   "LDJ-12-create-book-boundary",
+                   CreateBookSucceedsWithZeroValues);
             }
 
             return _results;
 
         }
 
+        #region TEST LOGIN
         private void LoginSucceeds()
         {
             _driver.Navigate().GoToUrl($"{baseUrl}/Account/Login");
@@ -169,6 +188,198 @@ namespace LibreriaDonJulio.Tests
                 _driver.FindElements(
                     By.CssSelector("form[action='/Account/Logout']")),
                 Is.Empty);
+        }
+        #endregion
+
+        #region TEST CREATE BOOKS
+        private void CreateBookSucceeds()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books/Create");
+
+            _driver.FindElement(By.Id("Title"))
+                .SendKeys("El Alquimista");
+
+            _driver.FindElement(By.Id("Author"))
+                .SendKeys("Paulo Coelho");
+
+            _driver.FindElement(By.Id("Description"))
+                .SendKeys("Esta es la historia de Santiago, un joven pastor andaluz que viaja desde su tierra natal hacia el desierto egipcio en busca de un tesoro oculto en las pirámides. Nadie sabe lo que contiene el tesoro, ni si Santiago será capaz de superar los obstáculos del camino. Pero lo que comienza como un viaje en busca de riquezas se convierte en un descubrimiento del tesoro interior.");
+
+            _driver.FindElement(By.Id("CoverUrl"))
+                .SendKeys("https://m.media-amazon.com/images/I/41u2QqDJuNL._SY445_SX342_ML2_.jpg");
+
+            _driver.FindElement(By.Id("Isbn"))
+                .SendKeys("9788408144755");
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("1076");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("30");
+
+            _driver.FindElement(
+                By.CssSelector("form[action='/Books/Create'] button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector(".alert-success"))
+                    .Any(element => element.Displayed)
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books"
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books/Index");
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var row = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408144755")));
+
+            var cells = row.FindElements(By.CssSelector("td"));
+
+            Assert.That(cells[1].Text, Is.EqualTo("El Alquimista"));
+            Assert.That(cells[2].Text, Is.EqualTo("Paulo Coelho"));
+            Assert.That(cells[3].Text, Is.EqualTo(
+                "Esta es la historia de Santiago, un joven pastor andaluz que viaja desde su tierra natal hacia el desierto egipcio en busca de un tesoro oculto en las pirámides. Nadie sabe lo que contiene el tesoro, ni si Santiago será capaz de superar los obstáculos del camino. Pero lo que comienza como un viaje en busca de riquezas se convierte en un descubrimiento del tesoro interior."));
+            Assert.That(cells[4].Text, Is.EqualTo("9788408144755"));
+            Assert.That(cells[5].Text, Is.EqualTo("1076.00"));
+            Assert.That(cells[6].Text, Is.EqualTo("30"));
+        }
+
+        private void CreateBookFailsWithNegativeValues()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books/Create");
+
+            _driver.FindElement(By.Id("Title"))
+                .SendKeys("La Quinta Montaña");
+
+            _driver.FindElement(By.Id("Author"))
+                .SendKeys("Paulo Coelho");
+
+            _driver.FindElement(By.Id("Description"))
+                .SendKeys("La Quinta Montaña cuenta la historia del profeta Elías, un hombre que recibe de Dios la orden de abandonar Israel. En un mundo regido por supersticiones, conflictos religiosos y tradiciones profundamente arraigadas, el joven profeta deberá enfrentarse a una avalancha de acontecimientos que le conducirán a un definitivo cara a cara con Dios. La historia del profeta Elías se convierte así en una valiosa lección de esperanza para el hombre contemporáneo, y nos plantea hasta qué punto podemos determinar nuestro destino.");
+
+            _driver.FindElement(By.Id("CoverUrl"))
+                .SendKeys("https://m.media-amazon.com/images/I/41Wr7PpgwUL._SY445_SX342_ML2_.jpg");
+
+            _driver.FindElement(By.Id("Isbn"))
+                .SendKeys("9788408045106");
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("-957");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("-15");
+
+            _driver.FindElement(
+                By.CssSelector("form[action='/Books/Create'] button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector(".field-validation-error"))
+                    .Count(element => element.Displayed) == 2);
+
+            var priceError = _driver.FindElement(
+                By.CssSelector("span[data-valmsg-for='Price']")).Text;
+
+            var stockError = _driver.FindElement(
+                By.CssSelector("span[data-valmsg-for='Stock']")).Text;
+
+            Assert.That(priceError, Is.Not.Empty);
+            Assert.That(stockError, Is.Not.Empty);
+
+            Assert.That(
+                _driver.Url,
+                Does.Contain("/Books/Create"));
+        }
+
+        private void CreateBookSucceedsWithZeroValues()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books/Create");
+
+            _driver.FindElement(By.Id("Title"))
+                .SendKeys("La Quinta Montaña");
+
+            _driver.FindElement(By.Id("Author"))
+                .SendKeys("Paulo Coelho");
+
+            _driver.FindElement(By.Id("Description"))
+                .SendKeys("La Quinta Montaña cuenta la historia del profeta Elías, un hombre que recibe de Dios la orden de abandonar Israel. En un mundo regido por supersticiones, conflictos religiosos y tradiciones profundamente arraigadas, el joven profeta deberá enfrentarse a una avalancha de acontecimientos que le conducirán a un definitivo cara a cara con Dios. La historia del profeta Elías se convierte así en una valiosa lección de esperanza para el hombre contemporáneo, y nos plantea hasta qué punto podemos determinar nuestro destino.\r\n\r\n");
+
+            _driver.FindElement(By.Id("CoverUrl"))
+                .SendKeys("https://m.media-amazon.com/images/I/61nwLM2bzbL._SY466_.jpg");
+
+            _driver.FindElement(By.Id("Isbn"))
+                .SendKeys("9788408045106");
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("0");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("0");
+
+            _driver.FindElement(
+                By.CssSelector("form[action='/Books/Create'] button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector(".alert-success"))
+                    .Any(element => element.Displayed)
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books"
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books/Index");
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var row = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408045106")));
+
+            var cells = row.FindElements(By.CssSelector("td"));
+
+            Assert.That(cells[1].Text, Is.EqualTo("La Quinta Montaña"));
+            Assert.That(cells[4].Text, Is.EqualTo("9788408045106"));
+            Assert.That(cells[5].Text, Is.EqualTo("0.00"));
+            Assert.That(cells[6].Text, Is.EqualTo("0"));
+        }
+        #endregion
+
+        private void LoginAsAdmin()
+        {
+            _driver.Manage().Cookies.DeleteAllCookies();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Account/Login");
+
+            _driver.FindElement(By.Id("Username"))
+                .SendKeys(DemoUsername);
+
+            _driver.FindElement(By.Id("Password"))
+                .SendKeys(DemoPassword);
+
+            _driver.FindElement(By.CssSelector("button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(
+                    By.CssSelector("form[action='/Account/Logout']"))
+                    .Any(element => element.Displayed));
         }
 
         private void RunScenario(
