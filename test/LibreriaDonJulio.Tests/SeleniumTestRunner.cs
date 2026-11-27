@@ -43,6 +43,12 @@ namespace LibreriaDonJulio.Tests
                   "LDJ-2 / LDJ-7",
                   "LDJ-7-login-valid",
                   LoginSucceeds);
+
+                RunScenario(
+                  "Login with invalid credentials",
+                  "LDJ-2 / LDJ-8",
+                  "LDJ-8-login-invalid",
+                  LoginFailsWithInvalidCredentials);
             }
 
             return _results;
@@ -76,6 +82,46 @@ namespace LibreriaDonJulio.Tests
                     .Any(element => element.Displayed),
                 Is.True,
                 "The user could not sign in.");
+        }
+
+        private void LoginFailsWithInvalidCredentials()
+        {
+            _driver.Manage().Cookies.DeleteAllCookies();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Account/Login");
+
+            _driver.FindElement(By.Id("Username"))
+                .SendKeys(DemoUsername);
+
+            _driver.FindElement(By.Id("Password"))
+                .SendKeys("password123");
+
+            _driver.FindElement(By.CssSelector("button[type='submit']"))
+            .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(
+                    By.CssSelector(".validation-summary-errors"))
+                    .Any(element => element.Displayed));
+
+            var errorMessage = _driver.FindElement(
+                By.CssSelector(".validation-summary-errors"))
+                .Text;
+
+            Assert.That(errorMessage,
+            Does.Contain("Invalid username or password."));
+
+            Assert.That(
+            _driver.Url,
+            Does.Contain("/Account/Login"));
+
+            Assert.That(
+            _driver.FindElements(
+            By.CssSelector("form[action='/Account/Logout']")),
+            Is.Empty);
         }
 
         private void RunScenario(
