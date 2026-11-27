@@ -121,6 +121,12 @@ namespace LibreriaDonJulio.Tests
                    "LDJ-6 / LDJ-20",
                    "LDJ-20-delete-book-cancelled",
                    DeleteBookFailsWhenCancelled);
+
+                RunScenario(
+                    "Delete last registered book",
+                    "LDJ-6 / LDJ-21",
+                    "LDJ-21-delete-book-boundary",
+                    DeleteLastBookSucceeds);
             }
 
             return _results
@@ -779,6 +785,53 @@ namespace LibreriaDonJulio.Tests
             Assert.That(
                 _driver.FindElements(By.CssSelector("table tbody tr")).Count,
                 Is.EqualTo(1));
+        }
+
+        private void DeleteLastBookSucceeds()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            var rows = _driver.FindElements(
+                By.CssSelector("table tbody tr"));
+
+            Assert.That(rows.Count, Is.EqualTo(1));
+
+            var row = rows.First(element =>
+                element.Text.Contains("9788408144755"));
+
+            row.FindElement(By.CssSelector("a.btn-danger")).Click();
+
+            wait.Until(driver =>
+                driver.Url.Contains("/Books/Delete"));
+
+            var details = _driver.FindElements(
+                By.CssSelector("dl.row dd"));
+
+            Assert.That(details[0].Text, Is.EqualTo("El Alquimista"));
+            Assert.That(details[4].Text, Is.EqualTo("9788408144755"));
+
+            _driver.FindElement(
+                By.CssSelector("form[action*='/Books/Delete'] button[type='submit']"))
+                .Click();
+
+            wait.Until(driver =>
+                driver.Url.TrimEnd('/') == $"{baseUrl}/Books"
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books/Index");
+
+            _driver.Navigate().Refresh();
+
+            Assert.That(
+                _driver.FindElements(By.CssSelector("table tbody tr")),
+                Is.Empty);
+
+            Assert.That(
+                _driver.FindElement(By.CssSelector("p.text-muted")).Text,
+                Is.EqualTo("No books registered."));
         }
         #endregion
 
