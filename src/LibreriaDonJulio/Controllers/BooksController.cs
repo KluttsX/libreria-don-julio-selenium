@@ -2,9 +2,11 @@
 using LibreriaDonJulio.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LibreriaDonJulio.Controllers
 {
+    [Authorize]
     public class BooksController : Controller
     {
         public readonly ApplicationDbContext _context;
