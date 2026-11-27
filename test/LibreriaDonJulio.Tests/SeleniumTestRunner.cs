@@ -61,6 +61,12 @@ namespace LibreriaDonJulio.Tests
                   "LDJ-3 / LDJ-10",
                   "LDJ-10-create-book-valid",
                   CreateBookSucceeds);
+
+                RunScenario(
+                   "Create book with negative values",
+                    "LDJ-3 / LDJ-11",
+                    "LDJ-11-create-book-invalid",
+                    CreateBookFailsWithNegativeValues);
             }
 
             return _results;
@@ -235,6 +241,58 @@ namespace LibreriaDonJulio.Tests
             Assert.That(cells[4].Text, Is.EqualTo("9788408144755"));
             Assert.That(cells[5].Text, Is.EqualTo("1076.00"));
             Assert.That(cells[6].Text, Is.EqualTo("30"));
+        }
+
+        private void CreateBookFailsWithNegativeValues()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books/Create");
+
+            _driver.FindElement(By.Id("Title"))
+                .SendKeys("La Quinta Montaña");
+
+            _driver.FindElement(By.Id("Author"))
+                .SendKeys("Paulo Coelho");
+
+            _driver.FindElement(By.Id("Description"))
+                .SendKeys("La Quinta Montaña cuenta la historia del profeta Elías, un hombre que recibe de Dios la orden de abandonar Israel. En un mundo regido por supersticiones, conflictos religiosos y tradiciones profundamente arraigadas, el joven profeta deberá enfrentarse a una avalancha de acontecimientos que le conducirán a un definitivo cara a cara con Dios. La historia del profeta Elías se convierte así en una valiosa lección de esperanza para el hombre contemporáneo, y nos plantea hasta qué punto podemos determinar nuestro destino.");
+
+            _driver.FindElement(By.Id("CoverUrl"))
+                .SendKeys("https://m.media-amazon.com/images/I/41Wr7PpgwUL._SY445_SX342_ML2_.jpg");
+
+            _driver.FindElement(By.Id("Isbn"))
+                .SendKeys("9788408045106");
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("-957");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("-15");
+
+            _driver.FindElement(
+                By.CssSelector("form[action='/Books/Create'] button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector(".field-validation-error"))
+                    .Count(element => element.Displayed) == 2);
+
+            var priceError = _driver.FindElement(
+                By.CssSelector("span[data-valmsg-for='Price']")).Text;
+
+            var stockError = _driver.FindElement(
+                By.CssSelector("span[data-valmsg-for='Stock']")).Text;
+
+            Assert.That(priceError, Is.Not.Empty);
+            Assert.That(stockError, Is.Not.Empty);
+
+            Assert.That(
+                _driver.Url,
+                Does.Contain("/Books/Create"));
         }
         #endregion
 
