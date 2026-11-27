@@ -57,6 +57,12 @@ namespace LibreriaDonJulio.Tests
                   LoginFailsWithEmptyFields);
 
                 RunScenario(
+                   "List books with empty catalog",
+                   "LDJ-4 / LDJ-15",
+                   "LDJ-15-list-books-empty",
+                   ListBooksSucceedsWithEmptyCatalog);
+
+                RunScenario(
                   "Create book with valid data",
                   "LDJ-3 / LDJ-10",
                   "LDJ-10-create-book-valid",
@@ -87,7 +93,9 @@ namespace LibreriaDonJulio.Tests
                   ListBooksFailsWithoutAuthentication);
             }
 
-            return _results;
+            return _results
+            .OrderBy(result => int.Parse(result.UserStory.Split('-').Last()))
+            .ToList();
 
         }
 
@@ -444,6 +452,29 @@ namespace LibreriaDonJulio.Tests
                 _driver.FindElements(
                     By.CssSelector("form[action='/Account/Logout']")),
                 Is.Empty);
+        }
+
+        private void ListBooksSucceedsWithEmptyCatalog()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector("p.text-muted"))
+                    .Any(element =>
+                        element.Text == "No books registered."));
+
+            Assert.That(
+                _driver.FindElements(By.CssSelector("table tbody tr")),
+                Is.Empty);
+
+            Assert.That(
+                _driver.FindElement(By.CssSelector("p.text-muted")).Text,
+                Is.EqualTo("No books registered."));
         }
         #endregion
 
