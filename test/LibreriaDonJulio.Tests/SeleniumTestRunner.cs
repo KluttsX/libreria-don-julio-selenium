@@ -49,6 +49,12 @@ namespace LibreriaDonJulio.Tests
                   "LDJ-2 / LDJ-8",
                   "LDJ-8-login-invalid",
                   LoginFailsWithInvalidCredentials);
+
+                RunScenario(
+                  "Login with empty fields",
+                  "LDJ-2 / LDJ-9",
+                  "LDJ-9-login-empty",
+                  LoginFailsWithEmptyFields);
             }
 
             return _results;
@@ -122,6 +128,47 @@ namespace LibreriaDonJulio.Tests
             _driver.FindElements(
             By.CssSelector("form[action='/Account/Logout']")),
             Is.Empty);
+        }
+
+        private void LoginFailsWithEmptyFields()
+        {
+            _driver.Manage().Cookies.DeleteAllCookies();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Account/Login");
+
+            _driver.FindElement(By.Id("Username")).Clear();
+            _driver.FindElement(By.Id("Password")).Clear();
+
+            _driver.FindElement(By.CssSelector("button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector(".field-validation-error"))
+                    .Count(element => element.Displayed) == 2);
+
+            var usernameError = _driver.FindElement(
+                By.CssSelector("span[data-valmsg-for='Username']")).Text;
+
+            var passwordError = _driver.FindElement(
+                By.CssSelector("span[data-valmsg-for='Password']")).Text;
+
+            Assert.That(usernameError,
+                Does.Contain("Username is required."));
+
+            Assert.That(passwordError,
+                Does.Contain("Password is required."));
+
+            Assert.That(
+                _driver.Url,
+                Does.Contain("/Account/Login"));
+
+            Assert.That(
+                _driver.FindElements(
+                    By.CssSelector("form[action='/Account/Logout']")),
+                Is.Empty);
         }
 
         private void RunScenario(
