@@ -79,6 +79,12 @@ namespace LibreriaDonJulio.Tests
                    "LDJ-4 / LDJ-13",
                    "LDJ-13-list-books-valid",
                    ListBooksSucceeds);
+
+                RunScenario(
+                  "List books without authentication",
+                  "LDJ-4 / LDJ-14",
+                  "LDJ-14-list-books-unauthorized",
+                  ListBooksFailsWithoutAuthentication);
             }
 
             return _results;
@@ -404,6 +410,40 @@ namespace LibreriaDonJulio.Tests
             Assert.That(secondCells[4].Text, Is.EqualTo("9788408045106"));
             Assert.That(secondCells[5].Text, Is.EqualTo("0.00"));
             Assert.That(secondCells[6].Text, Is.EqualTo("0"));
+        }
+
+        private void ListBooksFailsWithoutAuthentication()
+        {
+            _driver.Manage().Cookies.DeleteAllCookies();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.Url.Contains("/Account/Login"));
+
+            Assert.That(
+                _driver.Url,
+                Does.Contain("/Account/Login"));
+
+            Assert.That(
+                _driver.FindElement(By.Id("Username")).Displayed,
+                Is.True);
+
+            Assert.That(
+                _driver.FindElement(By.Id("Password")).Displayed,
+                Is.True);
+
+            Assert.That(
+                _driver.FindElements(By.CssSelector("table tbody tr")),
+                Is.Empty);
+
+            Assert.That(
+                _driver.FindElements(
+                    By.CssSelector("form[action='/Account/Logout']")),
+                Is.Empty);
         }
         #endregion
 
