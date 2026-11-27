@@ -73,6 +73,12 @@ namespace LibreriaDonJulio.Tests
                    "LDJ-3 / LDJ-12",
                    "LDJ-12-create-book-boundary",
                    CreateBookSucceedsWithZeroValues);
+
+                RunScenario(
+                   "List registered books",
+                   "LDJ-4 / LDJ-13",
+                   "LDJ-13-list-books-valid",
+                   ListBooksSucceeds);
             }
 
             return _results;
@@ -355,6 +361,49 @@ namespace LibreriaDonJulio.Tests
             Assert.That(cells[4].Text, Is.EqualTo("9788408045106"));
             Assert.That(cells[5].Text, Is.EqualTo("0.00"));
             Assert.That(cells[6].Text, Is.EqualTo("0"));
+        }
+        #endregion
+
+        #region TEST LIST BOOKS
+        private void ListBooksSucceeds()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .Count >= 2);
+
+            var rows = _driver.FindElements(
+                By.CssSelector("table tbody tr"));
+
+            Assert.That(rows.Count, Is.EqualTo(2));
+
+            var firstBook = rows.First(row =>
+                row.Text.Contains("9788408144755"));
+
+            var firstCells = firstBook.FindElements(By.CssSelector("td"));
+
+            Assert.That(firstCells[1].Text, Is.EqualTo("El Alquimista"));
+            Assert.That(firstCells[2].Text, Is.EqualTo("Paulo Coelho"));
+            Assert.That(firstCells[4].Text, Is.EqualTo("9788408144755"));
+            Assert.That(firstCells[5].Text, Is.EqualTo("1076.00"));
+            Assert.That(firstCells[6].Text, Is.EqualTo("30"));
+
+            var secondBook = rows.First(row =>
+                row.Text.Contains("9788408045106"));
+
+            var secondCells = secondBook.FindElements(By.CssSelector("td"));
+
+            Assert.That(secondCells[1].Text, Is.EqualTo("La Quinta Montaña"));
+            Assert.That(secondCells[2].Text, Is.EqualTo("Paulo Coelho"));
+            Assert.That(secondCells[4].Text, Is.EqualTo("9788408045106"));
+            Assert.That(secondCells[5].Text, Is.EqualTo("0.00"));
+            Assert.That(secondCells[6].Text, Is.EqualTo("0"));
         }
         #endregion
 
