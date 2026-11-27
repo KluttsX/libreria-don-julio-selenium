@@ -91,6 +91,12 @@ namespace LibreriaDonJulio.Tests
                   "LDJ-4 / LDJ-14",
                   "LDJ-14-list-books-unauthorized",
                   ListBooksFailsWithoutAuthentication);
+
+                RunScenario(
+                  "Edit book with valid data",
+                  "LDJ-5 / LDJ-16",
+                  "LDJ-16-edit-book-valid",
+                  EditBookSucceeds);
             }
 
             return _results
@@ -475,6 +481,65 @@ namespace LibreriaDonJulio.Tests
             Assert.That(
                 _driver.FindElement(By.CssSelector("p.text-muted")).Text,
                 Is.EqualTo("No books registered."));
+        }
+        #endregion
+
+        #region TEST EDIT BOOKS
+        private void EditBookSucceeds()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            var row = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408144755")));
+
+            row.FindElement(By.CssSelector("a.btn-warning")).Click();
+
+            wait.Until(driver =>
+                driver.Url.Contains("/Books/Edit"));
+
+            Assert.That(
+                _driver.FindElement(By.Id("Title")).GetAttribute("value"),
+                Is.EqualTo("El Alquimista"));
+
+            Assert.That(
+                _driver.FindElement(By.Id("Author")).GetAttribute("value"),
+                Is.EqualTo("Paulo Coelho"));
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("1250");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("45");
+
+            _driver.FindElement(
+                By.CssSelector("form[action*='/Books/Edit'] button[type='submit']"))
+                .Click();
+
+            wait.Until(driver =>
+                driver.Url.TrimEnd('/') == $"{baseUrl}/Books"
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books/Index");
+
+            _driver.Navigate().Refresh();
+
+            var updatedRow = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408144755")));
+
+            var cells = updatedRow.FindElements(By.CssSelector("td"));
+
+            Assert.That(cells[1].Text, Is.EqualTo("El Alquimista"));
+            Assert.That(cells[2].Text, Is.EqualTo("Paulo Coelho"));
+            Assert.That(cells[4].Text, Is.EqualTo("9788408144755"));
+            Assert.That(cells[5].Text, Is.EqualTo("1250.00"));
+            Assert.That(cells[6].Text, Is.EqualTo("45"));
         }
         #endregion
 
