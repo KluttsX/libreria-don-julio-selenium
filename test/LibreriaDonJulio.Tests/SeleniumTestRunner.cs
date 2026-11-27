@@ -55,12 +55,18 @@ namespace LibreriaDonJulio.Tests
                   "LDJ-2 / LDJ-9",
                   "LDJ-9-login-empty",
                   LoginFailsWithEmptyFields);
+
+                RunScenario(
+                  "Create book with valid data",
+                  "LDJ-3 / LDJ-10",
+                  "LDJ-10-create-book-valid",
+                  CreateBookSucceeds);
             }
 
             return _results;
 
         }
-
+        #region TEST LOGIN
         private void LoginSucceeds()
         {
             _driver.Navigate().GoToUrl($"{baseUrl}/Account/Login");
@@ -169,6 +175,91 @@ namespace LibreriaDonJulio.Tests
                 _driver.FindElements(
                     By.CssSelector("form[action='/Account/Logout']")),
                 Is.Empty);
+        }
+        #endregion
+
+        #region TEST CREATE BOOKS
+        private void CreateBookSucceeds()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books/Create");
+
+            _driver.FindElement(By.Id("Title"))
+                .SendKeys("El Alquimista");
+
+            _driver.FindElement(By.Id("Author"))
+                .SendKeys("Paulo Coelho");
+
+            _driver.FindElement(By.Id("Description"))
+                .SendKeys("Esta es la historia de Santiago, un joven pastor andaluz que viaja desde su tierra natal hacia el desierto egipcio en busca de un tesoro oculto en las pirámides. Nadie sabe lo que contiene el tesoro, ni si Santiago será capaz de superar los obstáculos del camino. Pero lo que comienza como un viaje en busca de riquezas se convierte en un descubrimiento del tesoro interior.");
+
+            _driver.FindElement(By.Id("CoverUrl"))
+                .SendKeys("https://m.media-amazon.com/images/I/41u2QqDJuNL._SY445_SX342_ML2_.jpg");
+
+            _driver.FindElement(By.Id("Isbn"))
+                .SendKeys("9788408144755");
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("1076");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("30");
+
+            _driver.FindElement(
+                By.CssSelector("form[action='/Books/Create'] button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector(".alert-success"))
+                    .Any(element => element.Displayed)
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books"
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books/Index");
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var row = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408144755")));
+
+            var cells = row.FindElements(By.CssSelector("td"));
+
+            Assert.That(cells[1].Text, Is.EqualTo("El Alquimista"));
+            Assert.That(cells[2].Text, Is.EqualTo("Paulo Coelho"));
+            Assert.That(cells[3].Text, Is.EqualTo(
+                "Esta es la historia de Santiago, un joven pastor andaluz que viaja desde su tierra natal hacia el desierto egipcio en busca de un tesoro oculto en las pirámides. Nadie sabe lo que contiene el tesoro, ni si Santiago será capaz de superar los obstáculos del camino. Pero lo que comienza como un viaje en busca de riquezas se convierte en un descubrimiento del tesoro interior."));
+            Assert.That(cells[4].Text, Is.EqualTo("9788408144755"));
+            Assert.That(cells[5].Text, Is.EqualTo("1076.00"));
+            Assert.That(cells[6].Text, Is.EqualTo("30"));
+        }
+        #endregion
+
+        private void LoginAsAdmin()
+        {
+            _driver.Manage().Cookies.DeleteAllCookies();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Account/Login");
+
+            _driver.FindElement(By.Id("Username"))
+                .SendKeys(DemoUsername);
+
+            _driver.FindElement(By.Id("Password"))
+                .SendKeys(DemoPassword);
+
+            _driver.FindElement(By.CssSelector("button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(
+                    By.CssSelector("form[action='/Account/Logout']"))
+                    .Any(element => element.Displayed));
         }
 
         private void RunScenario(
