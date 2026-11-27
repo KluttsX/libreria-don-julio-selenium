@@ -103,6 +103,12 @@ namespace LibreriaDonJulio.Tests
                   "LDJ-5 / LDJ-17",
                   "LDJ-17-edit-book-invalid",
                   EditBookFailsWithNegativeValues);
+
+                RunScenario(
+                   "Edit book with zero values",
+                   "LDJ-5 / LDJ-18",
+                   "LDJ-18-edit-book-boundary",
+                   EditBookSucceedsWithZeroValues);
             }
 
             return _results
@@ -605,6 +611,54 @@ namespace LibreriaDonJulio.Tests
 
             Assert.That(cells[5].Text, Is.EqualTo("1250.00"));
             Assert.That(cells[6].Text, Is.EqualTo("45"));
+        }
+
+        private void EditBookSucceedsWithZeroValues()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            var row = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408144755")));
+
+            row.FindElement(By.CssSelector("a.btn-warning")).Click();
+
+            wait.Until(driver =>
+                driver.Url.Contains("/Books/Edit"));
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("0");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("0");
+
+            _driver.FindElement(
+                By.CssSelector("form[action*='/Books/Edit'] button[type='submit']"))
+                .Click();
+
+            wait.Until(driver =>
+                driver.Url.TrimEnd('/') == $"{baseUrl}/Books"
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books/Index");
+
+            _driver.Navigate().Refresh();
+
+            var updatedRow = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408144755")));
+
+            var cells = updatedRow.FindElements(By.CssSelector("td"));
+
+            Assert.That(cells[1].Text, Is.EqualTo("El Alquimista"));
+            Assert.That(cells[4].Text, Is.EqualTo("9788408144755"));
+            Assert.That(cells[5].Text, Is.EqualTo("0.00"));
+            Assert.That(cells[6].Text, Is.EqualTo("0"));
         }
         #endregion
 
