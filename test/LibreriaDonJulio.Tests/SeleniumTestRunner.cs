@@ -67,11 +67,18 @@ namespace LibreriaDonJulio.Tests
                     "LDJ-3 / LDJ-11",
                     "LDJ-11-create-book-invalid",
                     CreateBookFailsWithNegativeValues);
+
+                RunScenario(
+                   "Create book with zero values",
+                   "LDJ-3 / LDJ-12",
+                   "LDJ-12-create-book-boundary",
+                   CreateBookSucceedsWithZeroValues);
             }
 
             return _results;
 
         }
+
         #region TEST LOGIN
         private void LoginSucceeds()
         {
@@ -293,6 +300,61 @@ namespace LibreriaDonJulio.Tests
             Assert.That(
                 _driver.Url,
                 Does.Contain("/Books/Create"));
+        }
+
+        private void CreateBookSucceedsWithZeroValues()
+        {
+            LoginAsAdmin();
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books/Create");
+
+            _driver.FindElement(By.Id("Title"))
+                .SendKeys("La Quinta Montaña");
+
+            _driver.FindElement(By.Id("Author"))
+                .SendKeys("Paulo Coelho");
+
+            _driver.FindElement(By.Id("Description"))
+                .SendKeys("La Quinta Montaña cuenta la historia del profeta Elías, un hombre que recibe de Dios la orden de abandonar Israel. En un mundo regido por supersticiones, conflictos religiosos y tradiciones profundamente arraigadas, el joven profeta deberá enfrentarse a una avalancha de acontecimientos que le conducirán a un definitivo cara a cara con Dios. La historia del profeta Elías se convierte así en una valiosa lección de esperanza para el hombre contemporáneo, y nos plantea hasta qué punto podemos determinar nuestro destino.\r\n\r\n");
+
+            _driver.FindElement(By.Id("CoverUrl"))
+                .SendKeys("https://m.media-amazon.com/images/I/61nwLM2bzbL._SY466_.jpg");
+
+            _driver.FindElement(By.Id("Isbn"))
+                .SendKeys("9788408045106");
+
+            _driver.FindElement(By.Id("Price")).Clear();
+            _driver.FindElement(By.Id("Price")).SendKeys("0");
+
+            _driver.FindElement(By.Id("Stock")).Clear();
+            _driver.FindElement(By.Id("Stock")).SendKeys("0");
+
+            _driver.FindElement(
+                By.CssSelector("form[action='/Books/Create'] button[type='submit']"))
+                .Click();
+
+            var wait = new WebDriverWait(
+                _driver, TimeSpan.FromSeconds(10));
+
+            wait.Until(driver =>
+                driver.FindElements(By.CssSelector(".alert-success"))
+                    .Any(element => element.Displayed)
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books"
+                || driver.Url.TrimEnd('/') == $"{baseUrl}/Books/Index");
+
+            _driver.Navigate().GoToUrl($"{baseUrl}/Books");
+
+            var row = wait.Until(driver =>
+                driver.FindElements(By.CssSelector("table tbody tr"))
+                    .FirstOrDefault(element =>
+                        element.Text.Contains("9788408045106")));
+
+            var cells = row.FindElements(By.CssSelector("td"));
+
+            Assert.That(cells[1].Text, Is.EqualTo("La Quinta Montaña"));
+            Assert.That(cells[4].Text, Is.EqualTo("9788408045106"));
+            Assert.That(cells[5].Text, Is.EqualTo("0.00"));
+            Assert.That(cells[6].Text, Is.EqualTo("0"));
         }
         #endregion
 
