@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LibreriaDonJulio/LibreriaDonJulio.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/LibreriaDonJulio.Tests/LibreriaDonJulio.Tests.csproj" Id="9a498b22-2412-47de-9c07-ae1eb93e4094" />
+  </Folder>
+</Solution>
