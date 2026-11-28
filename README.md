@@ -1,3 +1,4 @@
+
 # Librería Don Julio - Selenium
 
 Proyecto de pruebas automatizadas con Selenium y C# sobre una aplicación web para la gestión de libros, desarrollada con ASP.NET Core MVC, Entity Framework Core y SQLite.
@@ -16,8 +17,8 @@ El proyecto cuenta con 15 escenarios de prueba distribuidos en cinco historias d
 
 ## Requisitos
 
-- .NET SDK.
-- Entity Framework Core CLI (`dotnet-ef`).
+- .NET SDK 10.0.
+- Entity Framework Core CLI (`dotnet-ef`), versión 10.0.15 recomendada.
 - Google Chrome.
 
 ## Instalación
@@ -38,6 +39,27 @@ El proyecto cuenta con 15 escenarios de prueba distribuidos en cinco historias d
 
    ```bash
    dotnet restore
+   ```
+
+4. Verificar si Entity Framework Core CLI está instalado:
+
+   ```bash
+   dotnet ef --version
+   ```
+
+   En caso de que la herramienta no esté instalada o el comando no sea reconocido, ejecutar:
+
+   ```bash
+   dotnet tool install --global dotnet-ef --version 10.0.15
+   ```
+
+   Si ya se tiene instalada otra versión de `dotnet-ef` y funciona correctamente, no es necesario cambiarla.
+
+   Únicamente en caso de presentar errores de compatibilidad al aplicar las migraciones, desinstalar la versión actual e instalar la versión correspondiente al proyecto (10.0.15):
+
+   ```bash
+   dotnet tool uninstall --global dotnet-ef
+   dotnet tool install --global dotnet-ef --version 10.0.15
    ```
 
 ## Ejecutar la aplicación
